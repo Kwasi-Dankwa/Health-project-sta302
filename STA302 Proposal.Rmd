@@ -1,0 +1,23 @@
+```{r}
+
+data <- read.csv("Life Expectancy Data.csv", header = TRUE)
+cleaned_data <- na.omit(data[, c("Status", "Life.expectancy", "Total.expenditure", "GDP", "BMI", "Schooling")])
+cleaned_data$Status <- as.factor(cleaned_data$Status)
+model1 <- lm(Life.expectancy ~ Status + Total.expenditure + GDP + Schooling + BMI, data = cleaned_data)
+summary(model1)
+plot(cleaned_data,pch=90)
+plot(model1,which=1)
+
+fitted_values <- fitted(model1)
+standardized_residuals <- rstandard(model1)
+plot(fitted_values, standardized_residuals,
+     main = "Life Expectancy: Fitted vs Standardized Residuals",
+     xlab = "Fitted Values", ylab = "Standardized Residuals")
+sresidual_values <- rstandard(model1)
+hist(sresidual_values,xlab="Standardized residuals", main= "Standardized residuals hitsogram")
+plot(model1,which=2)
+
+
+
+
+```
