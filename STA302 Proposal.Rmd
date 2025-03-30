@@ -5,7 +5,7 @@ data <- read.csv("Life Expectancy Data.csv", header = TRUE)
 
 # Clean the data by removing rows with missing values 
 # and selecting relevant columns for analysis
-cleaned_data <- na.omit(data[, c("Status", "Life.expectancy", "Total.expenditure", "GDP", "BMI", "Schooling")])
+cleaned_data <- na.omit(data[, c("Status", "Life.expectancy", "Total.expenditure", "GDP", "BMI", "Schooling", "Income.composition.of.resources")])
 
 # Convert the 'Status' column to a factor for categorical analysis
 cleaned_data$Status <- as.factor(cleaned_data$Status)
@@ -20,16 +20,90 @@ plot(model1,which=1)
 fitted_values <- fitted(model1)
 standardized_residuals <- rstandard(model1)
 
+
+
+plot(model1,which=2)
+
+
+# Apply transformations
+
+
+### Just an example, testing for best fit
+
+# Example of log transformation and re-fitting
+cleaned_data$Log_Life_Expectancy <- log(cleaned_data$Life.expectancy)
+model_transformed <- lm(Log_Life_Expectancy ~ Status + Total.expenditure + GDP + Schooling + BMI, data = cleaned_data)
+summary(model_transformed) # Check summary of new model
+
+# fitted model and standardized residuals
+fitted_values <- fitted(model_transformed)
+standardized_residuals <- rstandard(model_transformed)
+
 #scatterplot to visualize the relationship between fitted values and standardized residuals
 plot(fitted_values, standardized_residuals,
      main = "Life Expectancy: Fitted vs Standardized Residuals",
      xlab = "Fitted Values", ylab = "Standardized Residuals")
-sresidual_values <- rstandard(model1)
+sresidual_values <- rstandard(model_transformed)
 hist(sresidual_values,xlab="Standardized residuals", main= "Standardized residuals hitsogram")
-plot(model1,which=2)
 
-# Apply transformations
 
+# Plot residuals
+plot(model_transformed, which=1) # Residuals vs Fitted
+
+# Q-Q plot for residuals
+plot(model_transformed, which=2) # Normal Q-Q
+
+
+## Actual log transformation
+
+
+# checking if variables are highly correlated
+library(car)
+vif(model1)
+
+library(tidyverse)
+
+# filter rows
+cleaned_data <- cleaned_data %>% filter(GDP > 0, Income.composition.of.resources > 0, Schooling > 0, BMI > 0)
+
+# omit data
+cleaned_data <- na.omit(cleaned_data)
+
+# log of predictors
+cleaned_data$log_GDP <- log(cleaned_data$GDP)
+cleaned_data$log_Expenditure <- log(cleaned_data$Total.expenditure)
+cleaned_data$log_Schooling <- log(cleaned_data$Schooling)
+cleaned_data$log_BMI <- log(cleaned_data$BMI)
+cleaned_data$log_Income_composition <- log(cleaned_data$Income.composition.of.resources)
+
+
+## new model
+model_log <- lm(Life.expectancy ~ Status + log_Income_composition + log_GDP + log_Schooling + log_BMI, data = cleaned_data)
+summary(model_log)
+
+# fitted model and standardized residuals
+fitted_values <- fitted(model_log)
+standardized_residuals <- rstandard(model_log)
+
+## qq plots
+qqnorm(residuals(model_log))
+qqline(residuals(model_log))
+
+plot(fitted(model_log), residuals(model_log))
+abline(h=0, col="red")
+
+## scatter plots
+plot(fitted(model_log), rstandard(model_log), 
+     main = "Fitted Values vs. Standardized Residuals",
+     xlab = "Fitted Values", ylab = "Standardized Residuals",
+     pch = 16, col = "blue")
+abline(h = 0, col = "red", lwd = 2, lty = 2)  # Add reference line at 0
+
+## histogram for distribution
+hist(rstandard(model_log), 
+     main = "Histogram of Standardized Residuals",
+     xlab = "Standardized Residuals", col = "lightblue",
+     border = "black", breaks = 30)
 
 
 ```
