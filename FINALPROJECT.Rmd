@@ -1,0 +1,86 @@
+```{r}
+# Load the data
+data <- read.csv("Life Expectancy Data.csv", header = TRUE)
+
+# Clean and filter data
+cleaned_data <- na.omit(data[, c("Status", "Life.expectancy", "Total.expenditure", 
+                                 "GDP", "Alcohol", "Income.composition.of.resources")])
+cleaned_data$Status <- as.factor(cleaned_data$Status)
+
+library(tidyverse)
+cleaned_data <- cleaned_data %>%
+  filter(GDP > 0, Total.expenditure > 0,
+         Income.composition.of.resources > 0, Alcohol > 0)
+
+# Log transformations
+cleaned_data$log_Income <- log(cleaned_data$Income.composition.of.resources)
+cleaned_data$log_Expenditure <- log(cleaned_data$Total.expenditure)
+cleaned_data$log_GDPrsq <- log(cleaned_data$GDP)^0.5
+cleaned_data$log_Alcohol <- log(cleaned_data$Alcohol)
+
+# Final model WITHOUT log_BMI
+modelfinal <- lm(Life.expectancy ~ Status + log_Income + log_Expenditure + 
+             log_GDPrsq + log_Alcohol, data = cleaned_data)
+
+# Model summary
+summary(modelfinal)
+
+# Diagnostic plots
+plot(model1, which = 1)  # Residuals vs Fitted
+plot(model1, which = 2)  # Q-Q plot
+
+# Histogram of standardized residuals
+hist(rstandard(modelfinal),
+     xlab = "Standardized Residuals",
+     main = "Histogram of Standardized Residuals")
+
+# VIF check for multicollinearity
+library(car)
+vif(modelfinal)
+
+# 1. Outliers
+ri_modelfinal <- rstandard(modelfinal)
+outlier_index <- which(abs(ri_modelfinal) > 4)
+
+
+# 2. High Leverage Points
+
+leverage_values <- hatvalues(modelfinal)
+p <- 5
+n <- nrow(cleaned_data)
+lev_threshold <- 2 * (p + 1) / n
+high_lev_index <- which(leverage_values > lev_threshold)
+high_lev_index
+
+
+# 3. Influential Points
+
+cooksD <- cooks.distance(modelfinal)
+cook_threshold <- 4 / n
+influential_index <- which(cooksD > cook_threshold)
+influential_index
+
+
+infl <- influence.measures(modelfinal)
+summary(infl)  # 显示所有异常点（标记为 TRUE）
+
+# 获取模型摘要
+model_summary <- summary(modelfinal)
+
+# 提取系数信息
+coef_info <- coef(model_summary)
+coef_table <- as.data.frame(coef_info)
+
+# 提取置信区间（默认就是 95%）
+confint_table <- confint(modelfinal)
+
+# 合并为一个完整表格
+final_model_table <- cbind(coef_table, confint_table)
+colnames(final_model_table)[5:6] <- c("95% CI Lower", "95% CI Upper")
+
+# 打印结果（与 summary(model1) 类似格式）
+print(round(final_model_table, 4))
+
+AIC(modelfinal)
+
+```
